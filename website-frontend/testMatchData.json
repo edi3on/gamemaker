@@ -1,0 +1,167 @@
+[
+  {
+    "match_id": 1,
+    "players": {
+      "player_ff": {"twitter_handle": "@FalconFury", "pfp": "", "description": "A swift and precise gladiator, known for aerial maneuvers."},
+      "player_ss": {"twitter_handle": "@ShadowStrike", "pfp": "", "description": "Master of stealth, striking from the shadows when least expected."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@FalconFury"},
+      {"winner_twitter_handle": "@ShadowStrike"},
+      {"winner_twitter_handle": "@FalconFury"},
+      {"winner_twitter_handle": "@ShadowStrike"},
+      {"winner_twitter_handle": "@FalconFury"}
+    ],
+    "matchWinner": "@FalconFury"
+  },
+  {
+    "match_id": 2,
+    "players": {
+      "player_vv": {"twitter_handle": "@ViperVenom", "pfp": "", "description": "Deadly and cunning, leaving opponents paralyzed with fear."},
+      "player_bp": {"twitter_handle": "@BlazePhoenix", "pfp": "", "description": "Rises from the ashes, a fiery force on the battlefield."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@ViperVenom"},
+      {"winner_twitter_handle": "@BlazePhoenix"},
+      {"winner_twitter_handle": "@ViperVenom"},
+      {"winner_twitter_handle": "@BlazePhoenix"},
+      {"winner_twitter_handle": "@ViperVenom"}
+    ],
+    "matchWinner": "@ViperVenom"
+  },
+  {
+    "match_id": 3,
+    "players": {
+      "player_sr": {"twitter_handle": "@StormReaper", "pfp": "", "description": "Wields the storm, sweeping through the arena with overwhelming power."},
+      "player_nc": {"twitter_handle": "@NightCrawler", "pfp": "", "description": "Silent and unseen, moving through the darkness to surprise foes."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@StormReaper"},
+      {"winner_twitter_handle": "@NightCrawler"},
+      {"winner_twitter_handle": "@StormReaper"},
+      {"winner_twitter_handle": "@NightCrawler"},
+      {"winner_twitter_handle": "@StormReaper"}
+    ],
+    "matchWinner": "@StormReaper"
+  },
+  {
+    "match_id": 4,
+    "players": {
+      "player_ff": {"twitter_handle": "@FalconFury", "pfp": "", "description": "A swift and precise gladiator, known for aerial maneuvers."},
+      "player_vv": {"twitter_handle": "@ViperVenom", "pfp": "", "description": "Deadly and cunning, leaving opponents paralyzed with fear."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@FalconFury"},
+      {"winner_twitter_handle": "@ViperVenom"},
+      {"winner_twitter_handle": "@FalconFury"},
+      {"winner_twitter_handle": "@ViperVenom"},
+      {"winner_twitter_handle": "@FalconFury"}
+    ],
+    "matchWinner": "@FalconFury"
+  },
+  {
+    "match_id": 5,
+    "players": {
+      "player_ss": {"twitter_handle": "@ShadowStrike", "pfp": "", "description": "Master of stealth, striking from the shadows when least expected."},
+      "player_sr": {"twitter_handle": "@StormReaper", "pfp": "", "description": "Wields the storm, sweeping through the arena with overwhelming power."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@ShadowStrike"},
+      {"winner_twitter_handle": "@StormReaper"},
+      {"winner_twitter_handle": "@ShadowStrike"},
+      {"winner_twitter_handle": "@StormReaper"},
+      {"winner_twitter_handle": "@ShadowStrike"}
+    ],
+    "matchWinner": "@ShadowStrike"
+  },
+  {
+    "match_id": 6,
+    "players": {
+      "player_bp": {"twitter_handle": "@BlazePhoenix", "pfp": "", "description": "Rises from the ashes, a fiery force on the battlefield."},
+      "player_nc": {"twitter_handle": "@NightCrawler", "pfp": "", "description": "Silent and unseen, moving through the darkness to surprise foes."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@BlazePhoenix"},
+      {"winner_twitter_handle": "@NightCrawler"},
+      {"winner_twitter_handle": "@BlazePhoenix"},
+      {"winner_twitter_handle": "@NightCrawler"},
+      {"winner_twitter_handle": "@BlazePhoenix"}
+    ],
+    "matchWinner": "@BlazePhoenix"
+  },
+  {
+    "match_id": 7,
+    "players": {
+      "player_gh": {"twitter_handle": "@GhostHunter", "pfp": "", "description": "A phantom presence, hunting down rivals with spectral precision."},
+      "player_lm": {"twitter_handle": "@LunarMage", "pfp": "", "description": "Channels lunar energies, casting powerful spells upon the arena."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@GhostHunter"},
+      {"winner_twitter_handle": "@LunarMage"},
+      {"winner_twitter_handle": "@GhostHunter"},
+      {"winner_twitter_handle": "@LunarMage"},
+      {"winner_twitter_handle": "@GhostHunter"}
+    ],
+    "matchWinner": "@GhostHunter"
+  },
+  {
+    "match_id": 8,
+    "players": {
+      "player_ds": {"twitter_handle": "@DarkSpecter", "pfp": "", "description": "An ominous figure, shrouded in shadow and fear."},
+      "player_ws": {"twitter_handle": "@WildSpirit", "pfp": "", "description": "Untamed and fierce, fighting with the raw power of nature."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@DarkSpecter"},
+      {"winner_twitter_handle": "@WildSpirit"},
+      {"winner_twitter_handle": "@DarkSpecter"},
+      {"winner_twitter_handle": "@WildSpirit"},
+      {"winner_twitter_handle": "@DarkSpecter"}
+    ],
+    "matchWinner": "@DarkSpecter"
+  },
+  {
+    "match_id": 9,
+    "players": {
+      "player_is": {"twitter_handle": "@IronSentinel", "pfp": "", "description": "An unbreakable guardian, holding the line against all odds."},
+      "player_vf": {"twitter_handle": "@VortexFury", "pfp": "", "description": "Unleashes chaotic winds, overwhelming opponents with a whirlwind of attacks."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@IronSentinel"},
+      {"winner_twitter_handle": "@VortexFury"},
+      {"winner_twitter_handle": "@IronSentinel"},
+      {"winner_twitter_handle": "@VortexFury"},
+      {"winner_twitter_handle": "@IronSentinel"}
+    ],
+    "matchWinner": "@IronSentinel"
+  },
+  {
+    "match_id": 10,
+    "players": {
+      "player_gh": {"twitter_handle": "@GhostHunter", "pfp": "", "description": "A phantom presence, hunting down rivals with spectral precision."},
+      "player_ds": {"twitter_handle": "@DarkSpecter", "pfp": "", "description": "An ominous figure, shrouded in shadow and fear."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@GhostHunter"},
+      {"winner_twitter_handle": "@DarkSpecter"},
+      {"winner_twitter_handle": "@GhostHunter"},
+      {"winner_twitter_handle": "@DarkSpecter"},
+      {"winner_twitter_handle": "@GhostHunter"}
+    ],
+    "matchWinner": "@GhostHunter"
+  },
+  {
+    "match_id": 11,
+    "players": {
+      "player_lm": {"twitter_handle": "@LunarMage", "pfp": "", "description": "Channels lunar energies, casting powerful spells upon the arena."},
+      "player_ws": {"twitter_handle": "@WildSpirit", "pfp": "", "description": "Untamed and fierce, fighting with the raw power of nature."}
+    },
+    "rounds": [
+      {"winner_twitter_handle": "@LunarMage"},
+      {"winner_twitter_handle": "@WildSpirit"},
+      {"winner_twitter_handle": "@LunarMage"},
+      {"winner_twitter_handle": "@WildSpirit"},
+      {"winner_twitter_handle": "@LunarMage"}
+    ],
+    "matchWinner": "@LunarMage"
+  }
+]
