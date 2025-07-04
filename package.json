@@ -1,5 +1,5 @@
 {
-  "name": "multi-agent-js",
+  "name": "gamemaker",
   "type": "module",
   "dependencies": {
     "@0xindie/agent-twitter-client": "^1.0.0",
