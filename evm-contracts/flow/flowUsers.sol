@@ -68,6 +68,7 @@ contract FlowUserSync is Ownable {
             user.twitterHandle = twitterHandle;
             user.ethereumAddress = ethAddress;
             user.createdAt = block.timestamp;
+            allUserIds.push(userId); // Add new userId to allUserIds
         }
         // Update twitter handle if changed
         if (keccak256(bytes(user.twitterHandle)) != keccak256(bytes(twitterHandle))) {
@@ -121,5 +122,39 @@ contract FlowUserSync is Ownable {
 
     function getUserWins(string memory userId) external view returns (uint256[] memory) {
         return userWins[userId];
+    }
+
+    string[] public allUserIds;
+
+    function getAllUserIds() external view returns (string[] memory) {
+        return allUserIds;
+    }
+
+    function getAllUsers() external view returns (
+        string[] memory userIds,
+        string[] memory twitterHandles,
+        address[] memory ethereumAddresses,
+        uint256[] memory createdAts,
+        uint256[] memory matchesPlayeds,
+        uint256[] memory matchesWons
+    ) {
+        uint256 len = allUserIds.length;
+        userIds = new string[](len);
+        twitterHandles = new string[](len);
+        ethereumAddresses = new address[](len);
+        createdAts = new uint256[](len);
+        matchesPlayeds = new uint256[](len);
+        matchesWons = new uint256[](len);
+
+        for (uint256 i = 0; i < len; i++) {
+            string memory uid = allUserIds[i];
+            UserProfile storage user = users[uid];
+            userIds[i] = user.userId;
+            twitterHandles[i] = user.twitterHandle;
+            ethereumAddresses[i] = user.ethereumAddress;
+            createdAts[i] = user.createdAt;
+            matchesPlayeds[i] = user.matchesPlayed;
+            matchesWons[i] = user.matchesWon;
+        }
     }
 }
