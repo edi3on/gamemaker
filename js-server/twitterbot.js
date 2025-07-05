@@ -3,17 +3,26 @@ import { Scraper, SearchMode } from "agent-twitter-client";
 import https from "https";
 import path from "path";
 import dotenv from "dotenv";
-import { getGladiatorWinner } from "./emperorAgent.js";
+import { getGladiatorWinner } from "./ai/emperorAgent.js";
 import { createWriteStream, unlink } from "fs";
 import { finished } from "stream/promises";
 import { addMatch } from "./contractWrite.js";
+import ImageGenerator from "./imageGenerator.js";
+import { fileURLToPath } from "url";
+
+// Polyfill __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Always load .env from the project root
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 // Specify the chain at the top; default is "saga"
 const CHAIN = process.env.GAME_CHAIN || "saga";
 
-dotenv.config();
-
 const twitterHandle = process.env.TWITTER_HANDLE;
+const twitterPassword = process.env.TWITTER_PASSWORD;
+const openaiApiKey = process.env.OPENAI_API_KEY; // Make sure this is in your .env
 
 async function downloadImageToFile(url, filename) {
   const filePath = path.join("pfp", filename);
@@ -99,10 +108,60 @@ function groupRepliesByConversationId(tweets) {
   return groups;
 }
 
+// Helper to get absolute path (for image posting)
+function getAbsolutePath(relativePath) {
+  // __dirname polyfill for ES modules
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  return path.isAbsolute(relativePath) ? relativePath : path.join(__dirname, relativePath);
+}
+
+// --- Add this helper for posting tweets with media (from testTweet.js) ---
+async function postTextTweet(text, conversationId, imageFilePath) {
+  const scraper = new Scraper();
+  const cookiesFile = `gamemakercookies_${twitterHandle}.txt`;
+
+  // Load cookies if they exist
+  if (await fs.access(cookiesFile).then(() => true).catch(() => false)) {
+    console.log("Loading saved cookies...");
+    const cookiesData = await fs.readFile(cookiesFile, "utf8");
+    const cookiesArray = JSON.parse(cookiesData);
+    const cookieStrings = cookiesArray.map(cookie =>
+      `${cookie.key}=${cookie.value}; Domain=${cookie.domain}; Path=${cookie.path}; ${cookie.secure ? "Secure" : ""}; ${cookie.httpOnly ? "HttpOnly" : ""}; SameSite=${cookie.sameSite || "Lax"}`
+    );
+    await scraper.setCookies(cookieStrings);
+    console.log("Cookies loaded successfully");
+  } else {
+    // Fallback to login if no cookies
+    await scraper.login(twitterHandle, twitterPassword);
+    console.log("Logged in with username and password.");
+  }
+
+  let mediaData = [];
+  if (imageFilePath) {
+    const absImagePath = getAbsolutePath(imageFilePath);
+    const data = await fs.readFile(absImagePath);
+    mediaData = [
+      {
+        data: data,
+        mediaType: "image/png"
+      }
+    ];
+  }
+
+  const tweet = await scraper.sendTweet(
+    text,
+    conversationId,
+    mediaData.length > 0 ? mediaData : undefined
+  );
+  console.log("Tweet posted:", tweet);
+}
+
 (async () => {
   let scraper;
   let updateIndex = 0;
   const pendingDuels = [];
+  const imageGen = new ImageGenerator(openaiApiKey); // <-- Create image generator instance
 
   try {
     scraper = new Scraper();
@@ -188,10 +247,12 @@ function groupRepliesByConversationId(tweets) {
               const pfpDir = "./pfp";
               try { await fs.mkdir(pfpDir, { recursive: true }); } catch {}
 
-              // Download challenger pfp
+              // Download challenger pfp and get userId
+              let challengerUserId = "";
               try {
                 const challengerProfile = await scraper.getProfile(challengerHandle);
                 const challengerPfp = challengerProfile?.avatar;
+                challengerUserId = challengerProfile?.userId || "";
                 if (challengerPfp) {
                   const challFileName = `chall_${challengerHandle}_${conversationId}.png`;
                   await downloadImageToFile(challengerPfp, challFileName);
@@ -201,10 +262,12 @@ function groupRepliesByConversationId(tweets) {
                 console.error(`Could not fetch profile for challenger @${challengerHandle}:`, err);
               }
 
-              // Download opponent pfp
+              // Download opponent pfp and get userId
+              let opponentUserId = "";
               try {
                 const opponentProfile = await scraper.getProfile(opponentHandle);
                 const opponentPfp = opponentProfile?.avatar;
+                opponentUserId = opponentProfile?.userId || "";
                 if (opponentPfp) {
                   const oppFileName = `opp_${opponentHandle}_${conversationId}.png`;
                   await downloadImageToFile(opponentPfp, oppFileName);
@@ -245,12 +308,14 @@ function groupRepliesByConversationId(tweets) {
 
               // --- Add to pending duels ---
               pendingDuels.push({
-                dueIndex: updateIndex + 5,
+                dueIndex: updateIndex + 1, // <-- Only wait 1 update before judging winner (for testing)
                 conversationId: mainTweet.id,
                 challenger: challengerHandle,
-                opponent: opponentHandle
+                opponent: opponentHandle,
+                challengerUserId, // <-- add this
+                opponentUserId    // <-- add this
               });
-              console.log(`Scheduled winner check for tweet ${mainTweet.id} at update ${updateIndex + 5}`);
+              console.log(`Scheduled winner check for tweet ${mainTweet.id} at update ${updateIndex + 1}`);
             } else {
               console.log("No opponent found in the main tweet.");
             }
@@ -261,8 +326,8 @@ function groupRepliesByConversationId(tweets) {
         for (let i = pendingDuels.length - 1; i >= 0; i--) {
           const duel = pendingDuels[i];
           if (updateIndex >= duel.dueIndex) {
-            // Before judging, refresh replies for this conversationId
             try {
+              // Before judging, refresh replies for this conversationId
               const tweetsArrLatest = [];
               const tweetsIterLatest = await scraper.searchTweets(`@gamemakertest -from:gamemakertest`, 100, SearchMode.Latest);
               for await (const t of tweetsIterLatest) tweetsArrLatest.push(t);
@@ -294,49 +359,49 @@ function groupRepliesByConversationId(tweets) {
               const winner = await getGladiatorWinner(duel.conversationId, duel.challenger, duel.opponent);
               console.log(`🏆 Winner for match ${duel.conversationId}: ${winner}`);
 
-              // --- Call contractWrite to record the match onchain ---
+              // --- Generate winner image using AI ---
+              let winnerImagePath = null;
               try {
-                await addMatch(duel.challenger, duel.opponent, winner, CHAIN); // <-- Pass CHAIN here
+                winnerImagePath = await imageGen.generateWinnerImage(
+                  winner,
+                  duel.challenger,
+                  duel.opponent,
+                  duel.conversationId
+                );
+                if (winnerImagePath) {
+                  console.log(`AI winner image generated at: ${winnerImagePath}`);
+                } else {
+                  console.log("AI winner image generation failed or not found.");
+                }
+              } catch (imgErr) {
+                console.error("Error generating AI winner image:", imgErr);
+              }
+
+              // --- Compose and post the tweet using testTweet.js logic ---
+              const text = `🏆 The winner of the duel between @${duel.challenger} and @${duel.opponent} is @${winner}!`;
+              try {
+                // Use the absolute path for the image
+                await postTextTweet(text, duel.conversationId, winnerImagePath);
+              } catch (tweetErr) {
+                console.error("Error posting tweet:", tweetErr);
+              }
+
+              // --- Call contractWrite to record the match onchain (updated contract) ---
+              try {
+                // You must provide all required fields for the new contract
+                await addMatch({
+                  challengerName: duel.challenger,
+                  challengerUserId: duel.challengerUserId || "", // Will set below
+                  opponentName: duel.opponent,
+                  opponentUserId: duel.opponentUserId || "",     // Will set below
+                  matchWinner: winner,
+                  aiPrompt: duel.aiPrompt || ""
+                });
                 console.log(`Match recorded onchain: ${duel.challenger} vs ${duel.opponent}, winner: ${winner}`);
               } catch (err) {
                 console.error("Error recording match onchain:", err);
               }
 
-              // Determine winner's pfp file path
-              const conversationId = duel.conversationId;
-              let imageFilePath;
-              if (winner.toLowerCase() === duel.challenger.toLowerCase()) {
-                imageFilePath = path.join("pfp", `chall_${duel.challenger}_${conversationId}.png`);
-              } else if (winner.toLowerCase() === duel.opponent.toLowerCase()) {
-                imageFilePath = path.join("pfp", `opp_${duel.opponent}_${conversationId}.png`);
-              } else {
-                imageFilePath = null;
-              }
-
-              if (imageFilePath) {
-                const data = await fs.readFile(imageFilePath);
-                const mediaData = [
-                  {
-                    data: data,
-                    mediaType: "image/png"
-                  }
-                ];
-                const text = `🏆 The winner of the duel between @${duel.challenger} and @${duel.opponent} is @${winner}!`;
-                const tweet = await scraper.sendTweet(
-                  text,
-                  duel.conversationId,
-                  mediaData
-                );
-                console.log("Tweet posted:", tweet);
-              } else {
-                console.log("Winner's profile image not found, posting text only.");
-                const text = `🏆 The winner of the duel between @${duel.challenger} and @${duel.opponent} is @${winner}!`;
-                const tweet = await scraper.sendTweet(
-                  text,
-                  duel.conversationId
-                );
-                console.log("Tweet posted:", tweet);
-              }
             } catch (err) {
               console.error("Error running emperor agent or updating replies:", err);
             }
