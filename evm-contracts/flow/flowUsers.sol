@@ -29,6 +29,7 @@ contract FlowUserSync is Ownable {
     mapping(string => uint256[]) public userMatches;
     // userId => matchIds won
     mapping(string => uint256[]) public userWins;
+    mapping(address => string) public addressToUserId;
 
     // Last matchId that has been synced from Saga
     uint256 public lastSyncedMatchId;
@@ -85,6 +86,7 @@ contract FlowUserSync is Ownable {
                 user.matchesWon += 1;
             }
         }
+        addressToUserId[ethAddress] = userId;
         emit UserUpdated(userId, twitterHandle, user.ethereumAddress);
     }
 
@@ -92,6 +94,7 @@ contract FlowUserSync is Ownable {
     function updateEthereumAddress(string memory userId, address ethAddress) external onlyOwner {
         require(bytes(users[userId].userId).length != 0, "User not found");
         users[userId].ethereumAddress = ethAddress;
+        addressToUserId[ethAddress] = userId;
         emit UserUpdated(userId, users[userId].twitterHandle, ethAddress);
     }
 
@@ -156,5 +159,24 @@ contract FlowUserSync is Ownable {
             matchesPlayeds[i] = user.matchesPlayed;
             matchesWons[i] = user.matchesWon;
         }
+    }
+
+    function toLower(string memory str) public pure returns (string memory) {
+        bytes memory bStr = bytes(str);
+        bytes memory bLower = new bytes(bStr.length);
+        for (uint i = 0; i < bStr.length; i++) {
+            // Uppercase character...
+            if ((uint8(bStr[i]) >= 65) && (uint8(bStr[i]) <= 90)) {
+                // So we add 32 to make it lowercase
+                bLower[i] = bytes1(uint8(bStr[i]) + 32);
+            } else {
+                bLower[i] = bStr[i];
+            }
+        }
+        return string(bLower);
+    }
+
+    function getUserIdByAddress(address ethAddress) external view returns (string memory) {
+        return addressToUserId[ethAddress];
     }
 }
