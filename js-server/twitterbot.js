@@ -106,7 +106,7 @@ function groupRepliesByConversationId(tweets) {
 
   try {
     scraper = new Scraper();
-    const cookiesFile = `qaicookies_${twitterHandle}.txt`;
+    const cookiesFile = `gamemakercookies_${twitterHandle}.txt`;
 
     // Load cookies if they exist
     try {
