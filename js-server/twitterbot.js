@@ -8,6 +8,9 @@ import { createWriteStream, unlink } from "fs";
 import { finished } from "stream/promises";
 import { addMatch } from "./contractWrite.js";
 
+// Specify the chain at the top; default is "saga"
+const CHAIN = process.env.GAME_CHAIN || "saga";
+
 dotenv.config();
 
 const twitterHandle = process.env.TWITTER_HANDLE;
@@ -293,7 +296,7 @@ function groupRepliesByConversationId(tweets) {
 
               // --- Call contractWrite to record the match onchain ---
               try {
-                await addMatch(duel.challenger, duel.opponent, winner);
+                await addMatch(duel.challenger, duel.opponent, winner, CHAIN); // <-- Pass CHAIN here
                 console.log(`Match recorded onchain: ${duel.challenger} vs ${duel.opponent}, winner: ${winner}`);
               } catch (err) {
                 console.error("Error recording match onchain:", err);
