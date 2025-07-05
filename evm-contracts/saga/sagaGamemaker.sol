@@ -3,149 +3,132 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// Simplified game contract for managing player profiles and match history
-contract GameContract is Ownable {
-    // Player profile structure
-    struct Player {
-        string gladiatorName; // Player identifier, must be lowercase, no @
-        string pfpLink;      // External URL for profile picture
-        uint256 lastUpdated; // Timestamp of last profile update
-    }
-
-    // Player stats structure
-    struct PlayerStats {
-        uint256 totalWins;
-        uint256 totalLosses;
-    }
-
+// Match history contract for managing and storing match details
+contract MatchHistory is Ownable {
     // Match structure
     struct Match {
-        uint256 matchId;    // Match identifier
-        string[2] players;  // Two players, must be lowercase, no @
-        string matchWinner; // Match winner, must be lowercase, no @
+        uint256 matchId;          // Match identifier
+        string challengerName;    // Challenger's name
+        string challengerUserId;  // Challenger's user ID
+        string opponentName;      // Opponent's name
+        string opponentUserId;    // Opponent's user ID
+        string matchWinner;       // Match winner
+        string aiPrompt;          // AI prompt used in the match
     }
 
-    // Events for debugging
-    event PlayerProfileUpdated(string gladiatorName, string pfpLink, uint256 timestamp);
-    event MatchAdded(uint256 matchId, string[2] players, string matchWinner);
+    // Mapping from matchId to Match
+    mapping(uint256 => Match) public matches;
+    // Array of matchIds for ordering
+    uint256[] public matchIds;
+    // Internal match counter
+    uint256 public matchCount;
 
-    // Storage
-    mapping(string => Player) public players;          // Maps gladiatorName to Player
-    mapping(string => PlayerStats) public playerStats; // Maps gladiatorName to stats
-    mapping(uint256 => Match) public matches;          // Maps matchId to Match
-    mapping(string => bool) public isPlayer;           // Tracks player existence
-    uint256 public matchCount;                        // Tracks total matches
+    // Event emitted when a match is added
+    event MatchAdded(
+        uint256 matchId,
+        string challengerName,
+        string challengerUserId,
+        string opponentName,
+        string opponentUserId,
+        string matchWinner,
+        string aiPrompt
+    );
 
-    // Constructor: Set deployer as owner
-    constructor() Ownable(msg.sender) {}
-
-    // Get contract owner (helper function for debugging)
-    function getOwner() external view returns (address) {
-        return owner();
-    }
-
-    // Update a player's profile (owner only)
-    function updatePlayerProfile(
-        string memory gladiatorName,
-        string memory pfpLink
-    ) external onlyOwner {
-        require(bytes(gladiatorName).length > 0, "Gladiator name cannot be empty string");
-        require(bytes(pfpLink).length > 0, "PFP link cannot be empty string");
-
-        if (!isPlayer[gladiatorName]) {
-            isPlayer[gladiatorName] = true;
-        }
-
-        players[gladiatorName] = Player({
-            gladiatorName: gladiatorName,
-            pfpLink: pfpLink,
-            lastUpdated: block.timestamp
-        });
-
-        emit PlayerProfileUpdated(gladiatorName, pfpLink, block.timestamp);
-    }
+    constructor(address initialOwner) Ownable(initialOwner) {}
 
     // Add a new match (owner only)
     function addMatch(
-        string[2] memory matchPlayerNames,
-        string memory matchWinner
+        string memory challengerName,
+        string memory challengerUserId,
+        string memory opponentName,
+        string memory opponentUserId,
+        string memory matchWinner,
+        string memory aiPrompt
     ) external onlyOwner {
-        require(bytes(matchPlayerNames[0]).length > 0, "First player name cannot be empty");
-        require(bytes(matchPlayerNames[1]).length > 0, "Second player name cannot be empty");
-        require(
-            keccak256(abi.encodePacked(matchPlayerNames[0])) != keccak256(abi.encodePacked(matchPlayerNames[1])),
-            "Players must have different names"
-        );
-        require(
-            keccak256(abi.encodePacked(matchWinner)) == keccak256(abi.encodePacked(matchPlayerNames[0])) ||
-            keccak256(abi.encodePacked(matchWinner)) == keccak256(abi.encodePacked(matchPlayerNames[1])),
-            "Winner must be one of the two players"
-        );
+        require(bytes(challengerName).length > 0, "Challenger name required");
+        require(bytes(opponentName).length > 0, "Opponent name required");
+        require(bytes(matchWinner).length > 0, "Winner required");
 
-        // Create or update player profiles
-        for (uint256 i = 0; i < 2; i++) {
-            string memory player = matchPlayerNames[i];
-            if (!isPlayer[player]) {
-                players[player] = Player({
-                    gladiatorName: player,
-                    pfpLink: "",
-                    lastUpdated: block.timestamp
-                });
-                isPlayer[player] = true;
-            }
-            if (keccak256(abi.encodePacked(player)) == keccak256(abi.encodePacked(matchWinner))) {
-                playerStats[player].totalWins++;
-            } else {
-                playerStats[player].totalLosses++;
-            }
-        }
-
-        // Store match
-        matches[matchCount] = Match({
-            matchId: matchCount,
-            players: matchPlayerNames,
-            matchWinner: matchWinner
+        uint256 matchId = matchCount;
+        matches[matchId] = Match({
+            matchId: matchId,
+            challengerName: challengerName,
+            challengerUserId: challengerUserId,
+            opponentName: opponentName,
+            opponentUserId: opponentUserId,
+            matchWinner: matchWinner,
+            aiPrompt: aiPrompt
         });
-        emit MatchAdded(matchCount, matchPlayerNames, matchWinner);
+        matchIds.push(matchId);
         matchCount++;
+
+        emit MatchAdded(
+            matchId,
+            challengerName,
+            challengerUserId,
+            opponentName,
+            opponentUserId,
+            matchWinner,
+            aiPrompt
+        );
     }
 
-    // Get a player's profile (public)
-    function getPlayerProfile(string memory gladiatorName)
-        external
-        view
-        returns (string memory, string memory, uint256)
-    {
-        Player memory player = players[gladiatorName];
-        string memory pfpLink = bytes(player.pfpLink).length > 0 ? player.pfpLink : "None";
-        return (player.gladiatorName, pfpLink, player.lastUpdated);
+    // Get the last n matches (most recent first)
+    function getRecentMatches(uint256 n) external view returns (Match[] memory) {
+        uint256 total = matchIds.length;
+        uint256 count = n < total ? n : total;
+        Match[] memory result = new Match[](count);
+        for (uint256 i = 0; i < count; i++) {
+            uint256 idx = total - 1 - i;
+            result[i] = matches[matchIds[idx]];
+        }
+        return result;
     }
 
-    // Get a match by ID (public)
+    // Get a single match by matchId
     function getMatch(uint256 matchId) external view returns (Match memory) {
-        require(matchId < matchCount, "Match ID does not exist");
+        require(matchId < matchCount, "Match does not exist");
         return matches[matchId];
     }
 
-    // Get a player's stats: wins, losses, and total matches (public)
-    function getPlayerStats(string memory gladiatorName)
-        external
-        view
-        returns (uint256 totalWins, uint256 totalLosses, uint256 totalMatches)
-    {
-        PlayerStats memory stats = playerStats[gladiatorName];
-        totalWins = stats.totalWins;
-        totalLosses = stats.totalLosses;
-        totalMatches = totalWins + totalLosses;
-    }
-
-    // Get recent matches (public)
-    function getRecentMatches(uint256 n) external view returns (Match[] memory) {
-        uint256 count = n < matchCount ? n : matchCount;
-        Match[] memory result = new Match[](count);
-        for (uint256 i = 0; i < count; i++) {
-            result[i] = matches[matchCount - count + i];
+    // Get all matches for a player (by name)
+    function getPlayerHistory(string memory playerName) external view returns (
+        string memory userId,
+        string[] memory opponents,
+        string[] memory winners,
+        uint256[] memory matchIdsOut
+    ) {
+        uint256 total = matchIds.length;
+        uint256 count = 0;
+        // First, count matches for allocation
+        for (uint256 i = 0; i < total; i++) {
+            Match storage m = matches[matchIds[i]];
+            if (
+                keccak256(bytes(m.challengerName)) == keccak256(bytes(playerName)) ||
+                keccak256(bytes(m.opponentName)) == keccak256(bytes(playerName))
+            ) {
+                count++;
+            }
         }
-        return result;
+        opponents = new string[](count);
+        winners = new string[](count);
+        matchIdsOut = new uint256[](count);
+        string memory foundUserId = "";
+        uint256 j = 0;
+        for (uint256 i = 0; i < total; i++) {
+            Match storage m = matches[matchIds[i]];
+            bool isChallenger = keccak256(bytes(m.challengerName)) == keccak256(bytes(playerName));
+            bool isOpponent = keccak256(bytes(m.opponentName)) == keccak256(bytes(playerName));
+            if (isChallenger || isOpponent) {
+                opponents[j] = isChallenger ? m.opponentName : m.challengerName;
+                winners[j] = m.matchWinner;
+                matchIdsOut[j] = m.matchId;
+                if (bytes(foundUserId).length == 0) {
+                    foundUserId = isChallenger ? m.challengerUserId : m.opponentUserId;
+                }
+                j++;
+            }
+        }
+        userId = foundUserId;
     }
 }
