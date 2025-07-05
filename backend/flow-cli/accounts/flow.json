@@ -1,0 +1,55 @@
+{
+	"contracts": {
+		"UserAccountManager": {
+			"source": "cadence/contracts/UserAccount.cdc",
+			"aliases": {
+				"testing": "0000000000000007"
+			}
+		},
+		"UserAccountManager2": "./cadence/contracts/UserAccount.cdc"
+	},
+	"networks": {
+		"emulator": "127.0.0.1:3569",
+		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"testing": "127.0.0.1:3569",
+		"testnet": "access.devnet.nodes.onflow.org:9000"
+	},
+	"accounts": {
+		"2c1ac42d77578075": {
+			"address": "2c1ac42d77578075",
+			"key": {
+				"type": "file",
+				"location": "test1.pkey"
+			}
+		},
+		"emulator-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": {
+				"type": "file",
+				"location": "emulator-account.pkey"
+			}
+		},
+		"test1": {
+			"address": "2c1ac42d77578075",
+			"key": {
+				"type": "file",
+				"location": "test1.pkey"
+			}
+		},
+		"test2": {
+			"address": "d3b3f2c8f199c9cc",
+			"key": {
+				"type": "file",
+				"location": "test2.pkey"
+			}
+		}
+	},
+	"deployments": {
+		"testnet": {
+			"test1": [
+				"UserAccountManager",
+				"UserAccountManager2"
+			]
+		}
+	}
+}
