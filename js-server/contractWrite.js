@@ -1,10 +1,7 @@
 //
-// Module to add a match to the GameContract onchain.
+// Module to add a match to the MatchHistory contract onchain (Saga only).
 // Usage: import { addMatch } from './contractWrite.js'
-//        await addMatch(player1, player2, winner, chain);
-//
-// Assumes the winner won all rounds (for now).
-// Supports chain selection: "saga", "ronin", "flow".
+//        await addMatch({ challengerName, challengerUserId, opponentName, opponentUserId, matchWinner, aiPrompt });
 //
 
 import { ethers } from "ethers";
@@ -17,8 +14,12 @@ dotenv.config({ path: "/Users/edi3on/Code/gamemaker/.env" }); // <-- Path to you
 const contractABI = [
   {
     "inputs": [
-      { "internalType": "string[2]", "name": "matchPlayerNames", "type": "string[2]" },
-      { "internalType": "string", "name": "matchWinner", "type": "string" }
+      { "internalType": "string", "name": "challengerName", "type": "string" },
+      { "internalType": "string", "name": "challengerUserId", "type": "string" },
+      { "internalType": "string", "name": "opponentName", "type": "string" },
+      { "internalType": "string", "name": "opponentUserId", "type": "string" },
+      { "internalType": "string", "name": "matchWinner", "type": "string" },
+      { "internalType": "string", "name": "aiPrompt", "type": "string" }
     ],
     "name": "addMatch",
     "outputs": [],
@@ -27,37 +28,28 @@ const contractABI = [
   }
 ];
 
-// Helper to get env variable by chain and key
-function getChainEnv(chain, key) {
-  const upperChain = chain.toUpperCase();
-  return process.env[`${key}_${upperChain}`];
-}
-
-let contractInstances = {};
-
 // Clean gladiator name: remove leading @, trim, lowercase, and remove spaces
 function cleanGladiatorName(name) {
   return name.replace(/^@/, "").trim().toLowerCase().replace(/\s+/g, "");
 }
 
+// Clean userId: trim and remove spaces
+function cleanUserId(id) {
+  return id.trim().replace(/\s+/g, "");
+}
+
 /**
- * Adds a match to the contract on the specified chain.
- * @param {string} player1 - First player's name/handle.
- * @param {string} player2 - Second player's name/handle.
- * @param {string} winner - Winner's name/handle.
- * @param {string} chain - Chain name ("saga", "ronin", "flow").
+ * Adds a match to the contract on Saga.
+ * @param {Object} matchObj - Object with keys: challengerName, challengerUserId, opponentName, opponentUserId, matchWinner, aiPrompt
  * @returns {Promise<string>} Transaction hash.
  */
-export async function addMatch(player1, player2, winner, chain) {
-  if (!chain) throw new Error("Chain must be specified (e.g., 'saga', 'ronin', 'flow').");
-  if (contractInstances[chain]) return contractInstances[chain];
-
-  const PRIVATE_KEY = getChainEnv(chain, "PRIVATE_KEY");
-  const CONTRACT_ADDRESS = getChainEnv(chain, "CONTRACT_ADDRESS");
-  const RPC_URL = getChainEnv(chain, "RPC_URL");
+export async function addMatch(matchObj) {
+  const PRIVATE_KEY = process.env.PRIVATE_KEY_SAGA;
+  const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS_SAGA;
+  const RPC_URL = process.env.RPC_URL_SAGA;
 
   if (!PRIVATE_KEY || !CONTRACT_ADDRESS || !RPC_URL) {
-    throw new Error(`Missing required environment variables for chain ${chain} (PRIVATE_KEY_${chain.toUpperCase()}, CONTRACT_ADDRESS_${chain.toUpperCase()}, RPC_URL_${chain.toUpperCase()})`);
+    throw new Error("Missing required environment variables for Saga (PRIVATE_KEY_SAGA, CONTRACT_ADDRESS_SAGA, RPC_URL_SAGA)");
   }
   const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
@@ -65,40 +57,46 @@ export async function addMatch(player1, player2, winner, chain) {
 
   const contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, wallet);
 
-  // Clean all names before sending to contract
-  const cleanedPlayer1 = cleanGladiatorName(player1);
-  const cleanedPlayer2 = cleanGladiatorName(player2);
-  const cleanedWinner = cleanGladiatorName(winner);
+  // Clean and validate all fields
+  const challengerName = cleanGladiatorName(matchObj.challengerName);
+  const challengerUserId = cleanUserId(matchObj.challengerUserId);
+  const opponentName = cleanGladiatorName(matchObj.opponentName);
+  const opponentUserId = cleanUserId(matchObj.opponentUserId);
+  const matchWinner = cleanGladiatorName(matchObj.matchWinner);
+  const aiPrompt = (matchObj.aiPrompt || "").trim();
 
-  // JS-side checks to match contract requirements
-  if (!cleanedPlayer1 || !cleanedPlayer2) throw new Error("Player names cannot be empty");
-  if (cleanedPlayer1 === cleanedPlayer2) throw new Error("Players must be different");
-  if (cleanedWinner !== cleanedPlayer1 && cleanedWinner !== cleanedPlayer2) throw new Error("Match winner must be one of the players");
-
-  const matchPlayerNames = [cleanedPlayer1, cleanedPlayer2];
-  const matchWinner = cleanedWinner;
+  if (!challengerName || !opponentName) throw new Error("Player names cannot be empty");
+  if (challengerName === opponentName) throw new Error("Players must be different");
+  if (!challengerUserId || !opponentUserId) throw new Error("User IDs cannot be empty");
+  if (matchWinner !== challengerName && matchWinner !== opponentName) throw new Error("Match winner must be one of the players");
 
   console.log({
-    matchPlayerNames,
+    challengerName,
+    challengerUserId,
+    opponentName,
+    opponentUserId,
     matchWinner,
-    chain
+    aiPrompt
   });
 
   try {
     const tx = await contract.addMatch(
-      matchPlayerNames,
-      matchWinner
-      // No custom gas options, let ethers.js/provider estimate
+      challengerName,
+      challengerUserId,
+      opponentName,
+      opponentUserId,
+      matchWinner,
+      aiPrompt
     );
-    console.log(`addMatch tx sent on ${chain}: ${tx.hash}`);
+    console.log(`addMatch tx sent on saga: ${tx.hash}`);
     const receipt = await tx.wait();
-    console.log(`✅ Match added on ${chain} in block: ${receipt.blockNumber}`);
+    console.log(`✅ Match added on saga in block: ${receipt.blockNumber}`);
     return tx.hash;
   } catch (error) {
     if (error.code === 'CALL_EXCEPTION') {
-      console.error(`❌ Transaction reverted on ${chain}. Reason: ${error.reason || 'Check contract require statements.'}`);
+      console.error(`❌ Transaction reverted on saga. Reason: ${error.reason || 'Check contract require statements.'}`);
     } else {
-      console.error(`❌ Error in addMatch on ${chain}:`, error.message);
+      console.error(`❌ Error in addMatch on saga:`, error.message);
     }
     throw error;
   }
