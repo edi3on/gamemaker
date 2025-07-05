@@ -53,6 +53,17 @@ contract SolariToken is ERC20, Ownable {
         emit ProfileUpdated(userId, profiles[userId].unclaimedTokens, profiles[userId].ethAddress);
     }
 
+    // Batch increment unclaimed tokens for a list of userIds (owner only)
+    function batchIncrementUnclaimedTokens(string[] memory userIds) external onlyOwner {
+        for (uint256 i = 0; i < userIds.length; i++) {
+            string memory userId = userIds[i];
+            require(bytes(userId).length > 0, "userId required");
+            profiles[userId].userId = userId;
+            profiles[userId].unclaimedTokens += 1;
+            emit ProfileUpdated(userId, profiles[userId].unclaimedTokens, profiles[userId].ethAddress);
+        }
+    }
+
     // User: claim tokens to their eth address
     function claimTokens() external {
         string memory userId = addressToUserId[msg.sender];
