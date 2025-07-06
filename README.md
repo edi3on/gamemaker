@@ -1,6 +1,6 @@
 #  Twitter Duel Bot — Gamemaker
 
-This project lets users engage in AI-judged Twitter “duels” — arguments, rap battles, or roasts — where an Emperor Agent (powered by OpenAI) determines the winner. Match results are immutably recorded on-chain, player profiles are tracked long-term, and rewards are distributed in real-time.
+This project lets users engage in AI-judged Twitter “duels” — arguments, or roasts — where an Emperor Agent (powered by OpenAI) determines the winner. Match results are immutably recorded on-chain, player profiles are tracked long-term, and rewards are distributed in real-time.
 
 > Built for a multi-chain hackathon featuring Flow, Saga, and Ronin.
 
