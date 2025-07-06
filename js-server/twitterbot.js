@@ -195,7 +195,7 @@ async function postTextTweet(text, conversationId, imageFilePath) {
       try {
         console.log(`\n[Update ${updateIndex}] Searching tweets mentioning @${twitterHandle}...`);
         const tweetsArr = [];
-        const tweetsIter = await scraper.searchTweets(`@gamemakertest -from:gamemakertest`, 100, SearchMode.Latest);
+        const tweetsIter = await scraper.searchTweets(`@thegamemakr -from:thegamemakr`, 100, SearchMode.Latest);
         for await (const t of tweetsIter) tweetsArr.push(t);
         // console.log("Found tweets:", tweetsArr.map(t => ({ id: t.id, text: t.text, isReply: t.isReply, timestamp: t.timestamp })));
 
@@ -356,8 +356,11 @@ async function postTextTweet(text, conversationId, imageFilePath) {
 
               // Run emperor agent
               console.log(`Getting winner for tweet ${duel.conversationId}...`);
-              const winner = await getGladiatorWinner(duel.conversationId, duel.challenger, duel.opponent);
+              const result = await getGladiatorWinner(duel.conversationId, duel.challenger, duel.opponent);
+              const winner = result.winner;
+              const aiPrompt = result.prompt;
               console.log(`🏆 Winner for match ${duel.conversationId}: ${winner}`);
+              console.log(`🤖 AI Prompt used: ${aiPrompt}`);
 
               // --- Generate winner image using AI ---
               let winnerImagePath = null;
@@ -391,13 +394,14 @@ async function postTextTweet(text, conversationId, imageFilePath) {
                 // You must provide all required fields for the new contract
                 await addMatch({
                   challengerName: duel.challenger,
-                  challengerUserId: duel.challengerUserId || "", // Will set below
+                  challengerUserId: duel.challengerUserId || "", 
                   opponentName: duel.opponent,
-                  opponentUserId: duel.opponentUserId || "",     // Will set below
+                  opponentUserId: duel.opponentUserId || "",     
                   matchWinner: winner,
-                  aiPrompt: duel.aiPrompt || ""
+                  aiPrompt: aiPrompt // Now using the actual AI prompt from the emperor agent
                 });
                 console.log(`Match recorded onchain: ${duel.challenger} vs ${duel.opponent}, winner: ${winner}`);
+                console.log(`AI Prompt recorded: ${aiPrompt}`);
               } catch (err) {
                 console.error("Error recording match onchain:", err);
               }

@@ -36,7 +36,7 @@ async function getAudienceDialogue(conversationId, tweetRepliesPath) {
  * @param {string} challengerName - The challenger handle.
  * @param {string} opponentName - The opponent handle.
  * @param {string} [tweetRepliesPath='./tweetReplies.json'] - Path to tweetReplies.json.
- * @returns {Promise<string>} - The winner's handle (challenger or opponent).
+ * @returns {Promise<{winner: string, prompt: string}>} - Object containing the winner's handle and the full AI prompt used.
  */
 export async function getGladiatorWinner(conversationId, challengerName, opponentName, tweetRepliesPath = './tweetReplies.json') {
   if (!process.env.OPENAI_API_KEY) {
@@ -80,7 +80,13 @@ export async function getGladiatorWinner(conversationId, challengerName, opponen
   const opponentScore = baseScores.opponent.baseScore || 0;
 
   // Determine the winner (no tie possible due to prompt)
-  return challengerScore > opponentScore ? challengerName : opponentName;
+  const winner = challengerScore > opponentScore ? challengerName : opponentName;
+  
+  // Return both winner and the full prompt used
+  return {
+    winner: winner,
+    prompt: prompt
+  };
     
   } catch (error) {
     console.error(`❌ Emperor Agent failed: ${error.message}`);
@@ -89,7 +95,14 @@ export async function getGladiatorWinner(conversationId, challengerName, opponen
     // Fallback: Random winner selection
     const randomWinner = Math.random() > 0.5 ? challengerName : opponentName;
     console.log(`🎲 Random winner selected: ${randomWinner}`);
-    return randomWinner;
+    
+    // Create fallback prompt
+    const fallbackPrompt = `Audience text: "${dialogue}"\nGladiators: ${challengerName} vs ${opponentName}\n[FALLBACK: Emperor Agent failed, random selection used]`;
+    
+    return {
+      winner: randomWinner,
+      prompt: fallbackPrompt
+    };
   }
 }
 
